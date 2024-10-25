@@ -7,8 +7,8 @@ import axios from 'axios'
 
 //configuration axios
 
-//'http:// http://192.168.2.8:8080/' //Sur serveur
-axios.defaults.baseURL = ' http://192.168.2.8:8080/' //'http://localhost:8080/'
+//'http:// : '192.168.43.171:4044' //Sur serveur
+axios.defaults.baseURL = ' http://192.168.43.171:4044' //'http://localhost:4044/'
 
 
 const app=createApp(App)

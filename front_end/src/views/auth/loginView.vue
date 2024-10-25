@@ -1,13 +1,13 @@
 <template>
 <div class="flex flex-col sm:flex-row  px-5 items-center justify-center  sm:justify-between w-full overflow-hidden  ">
     <div class="hidden sm:flex flex-col w-full items-center ">
-        <span class="   text-red-500"> Ministere du travail,de l emploi et de la fonction publique</span>
+        <span class="   text-red-500"> Ministère de travail,de l'emploi et de la fonction publique</span>
         <span class=" text-3xl font-bold text-green-500"> Gestion de pointage du personnel </span>
         <span class=" "> Développer par Hery</span>
     </div>
     <div class=" flex flex-col sm:w-full  items-start">
         <div class="flex flex-col justify-centerlear-left sm:py-4 sm:px-5 rounded-xl  ">
-            <span class="   text-4xl mb-6">Authantification</span>
+            <span class="   text-4xl mb-6">Authentification</span>
             <div class=" border border-gray-300 rounded-lg px-2 py-1 flex flex-row">
                 <svg class="w-5" viewBox="0 0 24 24">
                     <path class=" fill-current text-gray-400" d="M12 4a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z" /></svg>

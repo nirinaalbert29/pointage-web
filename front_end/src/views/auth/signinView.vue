@@ -1,7 +1,7 @@
 <template>
 <div class="flex flex-row  px-5 items-center justify-between w-full h-full  ">
     <div class=" flex flex-col w-full items-center ">
-        <span class="   text-red-500"> Ministere du travail,de l emploi et de la fonction publique</span>
+        <span class="   text-red-500"> Ministere du Travail,de l'Emploi et de la Fonction Publique</span>
         <span class=" text-3xl font-bold text-green-500"> Gestion de pointage du personnel</span>
         <span class=" "> Développer par Hery</span>
     </div>
