@@ -9,6 +9,7 @@ const PresenceController = require('../controller/PresenceController');
 const AbsenceController = require('../controller/absenceController');
 const DashboardController = require('../controller/DashboardController');
 const Conge = require('../controller/conge.controller');
+const Config = require('../controller/ConfigController');
 
 // Middleware d'authentification pour toutes les routes
 router.use(auth);
@@ -24,6 +25,12 @@ router.get('/users', UtilisateurController.getList);
 router.post('/dec_user', UtilisateurController.setAccess);
 router.post('/log_user', UtilisateurController.setLogin);
 
+// Route pour obtenir les informations d'un utilisateur
+router.get('/user/:id', Config.getUser);
+// Route pour mettre à jour les informations d'un utilisateur
+router.put('/user/:id', Config.updateUser);
+
+
 // Routes Employés
 router.post('/emp', EmployeController.register);
 router.put('/emp/:emp_im', EmployeController.update);
@@ -35,8 +42,6 @@ router.get('/user/:emp_im', EmployeController.getUser);
 // router.get('/api/employees', EmployeController.getAll);
 // router.get('/api/dashboard/employee/:emp_im/stats', EmployeController.getDetailedStats);
 
-// Routes Présences
-// router.post('/presence', PresenceController.register);
 // Routes Présences
 router.post('/presence', PresenceController.register);
 router.delete('/presence/:id_pres', PresenceController.delete);
@@ -54,8 +59,8 @@ router.put('/absence/:id_abs', AbsenceController.update);
 router.delete('/absence/:id_abs', AbsenceController.delete);
 
 // Routes Dashboard
-router.get('/api/dashboard/stats', DashboardController.getStats);
-router.get('/api/dashboard/presence/history', DashboardController.getPresenceHistory);
+router.get('/dashboard/total-employees', DashboardController.getTotalEmployees);
+router.get('/dashboard/stats', DashboardController.getStats);
 
 // Routes pour les congés
 router.get('/congeList', Conge.find_all_conge);

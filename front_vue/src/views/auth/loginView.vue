@@ -1,54 +1,57 @@
 <template>
-    <div class="bg-stone-900 flex flex-col w-full h-full">
-        <div class="flex justify-between w-full">
-            <div class="flex flex-row w-60 rounded-xl justify-center mt-3 ml-3 items-center bg-indigo-600">
-                <svg class="w-7" viewBox="0 0 24 24">
-                    <path class="fill-current text-white" d="M10 4v4h4V4h-4m6 0v4h4V4h-4m0 6v4h4v-4h-4m0 6v4h4v-4h-4m-2 4v-4h-4v4h4m-6 0v-4H4v4h4m0-6v-4H4v4h4m0-6V4H4v4h4m2 6h4v-4h-4v4M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4c-1.08 0-2-.9-2-2V4a2 2 0 0 1 2-2z" />
-                </svg>
-                <span class="text-2xl text-white">Scanner Présence</span>
-            </div>
-            <div class="flex flex-row items-center text-white gap-4 mr-4">
-                <router-link to="/scanQRCode" class="cursor-pointer">Appareil</router-link>
-                <div @click="this.$store.state.decView=false" class="px-4 py-1 hover:scale-125 transform group cursor-pointer" title="Deconnectez ?">
-                    <svg class="w-7" viewBox="0 0 24 24">
-                        <path class="fill-current" :class="this.$store.state.is_dark?'text-white group-hover:text-red-600':'text-gray-700 group-hover:text-red-600'" d="m16.56 5.44-1.45 1.45A5.969 5.969 0 0 1 18 12a6 6 0 0 1-6 6 6 6 0 0 1-6-6c0-2.17 1.16-4.06 2.88-5.12L7.44 5.44A7.961 7.961 0 0 0 4 12a8 8 0 0 0 8 8 8 8 0 0 0 8-8c0-2.72-1.36-5.12-3.44-6.56M13 3h-2v10h2" />
+    <div class="flex flex-row px-5 items-center justify-between w-full h-full">
+        <div class="flex flex-col w-full items-center">
+            <span class="text-red-500">Ministere du Travail,de l'Emploi et de la Fonction Publique</span>
+            <span class="text-3xl font-bold text-green-500">Gestion de pointage du personnel</span>
+            <span>Développer par Hery</span>
+        </div>
+        <div class="flex flex-col w-full items-start">
+            <div class="flex flex-col clear-left py-4 px-5 rounded-xl">
+                <!-- Message d'erreur -->
+                <div v-if="showError" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                    <span class="block sm:inline">{{ errorMessage }}</span>
+                </div>
+
+                <span class="text-4xl mb-6">Connexion</span>
+                <div class="border border-gray-300 rounded-lg px-2 flex flex-row">
+                    <svg class="w-5" viewBox="0 0 24 24">
+                        <path class="fill-current text-gray-400" d="m20 8-8 5-8-5V6l8 5 8-5m0-2H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+                    </svg>
+                    <input v-model="credentials.email" type="text" placeholder="N° téléphone ou email" class="bg-transparent outline-none ml-2 py-1">
+                </div>
+
+                <div class="border border-gray-300 rounded-lg px-2 flex flex-row mt-4">
+                    <svg class="w-5" viewBox="0 0 24 24">
+                        <path class="fill-current text-gray-400" d="M17 7h5v10h-5v2a1 1 0 0 0 1 1h2v2h-2.5c-.55 0-1.5-.45-1.5-1 0 .55-.95 1-1.5 1H12v-2h2a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2V2h2.5c.55 0 1.5.45 1.5 1 0-.55.95-1 1.5-1H20v2h-2a1 1 0 0 0-1 1v2M2 7h11v2H4v6h9v2H2V7m18 8V9h-3v6h3M8.5 12A1.5 1.5 0 0 0 7 10.5 1.5 1.5 0 0 0 5.5 12 1.5 1.5 0 0 0 7 13.5 1.5 1.5 0 0 0 8.5 12m4.5-1.11c-.61-.56-1.56-.51-2.12.11-.56.6-.51 1.55.12 2.11.55.52 1.43.52 2 0v-2.22z" />
+                    </svg>
+                    <input v-model="credentials.password" :type="hidden ? 'password' : 'text'" placeholder="Mot de passe" class="bg-transparent outline-none ml-2 py-1">
+                    <svg @click="cheked(false)" v-if="hidden" class="w-5 cursor-pointer" viewBox="0 0 24 24">
+                        <path class="fill-current text-gray-400" d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z" />
+                    </svg>
+                    <svg v-else @click="cheked(true)" class="w-5 cursor-pointer" viewBox="0 0 24 24">
+                        <path class="fill-current text-gray-400" d="M11.83 9 15 12.16V12a3 3 0 0 0-3-3h-.17m-4.3.8 1.55 1.55c-.05.21-.08.42-.08.65a3 3 0 0 0 3 3c.22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53a5 5 0 0 1-5-5c0-.79.2-1.53.53-2.2M2 4.27l2.28 2.28.45.45C3.08 8.3 1.78 10 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.43.42L19.73 22 21 20.73 3.27 3M12 7a5 5 0 0 1 5 5c0 .64-.13 1.26-.36 1.82l2.93 2.93c1.5-1.25 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-4 .7l2.17 2.15C10.74 7.13 11.35 7 12 7z" />
                     </svg>
                 </div>
-            </div>
-        </div>
-        <div class="w-full flex flex-row h-full">
-            <div class="w-[30vw] h-full border-r border-stone-400">
-                <div class="flex px-10 mt-12">
-                    <video ref="video" width="200" height="300" autoplay></video>
-                    <canvas ref="canvas" style="display: none;"></canvas>
-                </div>
-                <div class="flex flex-col ml-10 mt-12 text-white space-y-4">
-                    <div v-if="employeeInfo" class="bg-stone-800 p-4 rounded-lg">
-                        <h3 class="text-lg font-bold mb-2">Information Employé</h3>
-                        <div class="flex flex-col space-y-2">
-                            <div class="flex justify-between">
-                                <span class="font-medium">ID:</span>
-                                <span>{{ employeeInfo.emp_im }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="font-medium">Nom:</span>
-                                <span>{{ employeeInfo.emp_nom_prenom }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="font-medium">Fonction:</span>
-                                <span>{{ employeeInfo.emp_fonction }}</span>
-                            </div>
-                        </div>
-                        <button 
-                            @click="fairePresence" 
-                            class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
-                            Faire Présence
+
+                <!-- Boutons -->
+                <div class="flex flex-col space-y-3 mt-4">
+                    <!-- Bouton Connexion -->
+                    <div class="rounded-lg px-2 bg-green-500 flex flex-row border border-green-500">
+                        <button @click="login" 
+                                class="text-white text-xl w-full rounded-lg py-2"
+                                :disabled="!isFormValid">
+                            Connexion
                         </button>
                     </div>
-                    <div v-if="lastStatus" :class="getStatusClass()" class="p-4 rounded-lg">
-                        <h3 class="text-lg font-bold mb-2">Dernier Pointage</h3>
-                        <p>Status: {{ lastStatus.status_pres }}</p>
-                        <p>Heure: {{ formatTime(lastStatus.pres_date_enreg) }}</p>
+
+                    <!-- Bouton Inscription -->
+                    <div class="rounded-lg px-2 border border-gray-400">
+                        <router-link to="/inscription" class="flex text-gray-400 text-xl w-full rounded-lg items-center justify-center py-2">
+                            <svg class="w-5 mr-2" viewBox="0 0 24 24">
+                                <path class="fill-current text-gray-400" d="M15 4a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 1.9a2.1 2.1 0 0 1 2.1 2.1 2.1 2.1 0 0 1-2.1 2.1 2.1 2.1 0 0 1-2.1-2.1 2.1 2.1 0 0 1 2.1-2.1M15 14c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4m0 1.9c2.97 0 6.1 1.46 6.1 2.1v.1H8.9v-.1c0-.64 3.13-2.1 6.1-2.1M1 10v2h8v-2H1m2-4v2h6V6H3m-2 8v2h8v-2H1z"/>
+                            </svg>
+                            <span>S'inscrire</span>
+                        </router-link>
                     </div>
                 </div>
             </div>
@@ -57,113 +60,56 @@
 </template>
 
 <script>
-import jsQR from "jsqr";
-import axios from 'axios';
-
 export default {
     data() {
         return {
-            employeeInfo: null,
-            lastStatus: null,
-            scanning: false,
-            error: null
-        };
+            hidden: true,
+            showError: false,
+            errorMessage: '',
+            credentials: {
+                email: '',
+                password: ''
+            }
+        }
     },
-    mounted() {
-        this.startVideo();
+    computed: {
+        isFormValid() {
+            return this.credentials.email && this.credentials.password;
+        }
     },
     methods: {
-        startVideo() {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(stream => {
-                    this.$refs.video.srcObject = stream;
-                    this.startScanning();
-                })
-                .catch(err => {
-                    console.error("Erreur lors de l'accès à la caméra : ", err);
-                    this.error = "Erreur d'accès à la caméra";
+        cheked(val) {
+            this.hidden = val
+        },
+        async login() {
+            if (!this.isFormValid) return;
+
+            try {
+                const response = await this.$http.post('api/log_user', {
+                    util_email: this.credentials.email,
+                    util_pass: this.credentials.password
                 });
-        },
-        startScanning() {
-            this.scanning = true;
-            this.scan();
-        },
-        scan() {
-            if (!this.scanning) return;
 
-            const video = this.$refs.video;
-            const canvas = this.$refs.canvas;
-            const context = canvas.getContext("2d");
-
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height);
-
-                if (code) {
-                    try {
-                        const data = JSON.parse(code.data);
-                        if (data.emp_im) {
-                            this.verifierEmploye(data.emp_im);
-                        }
-                    } catch (e) {
-                        console.error("QR Code invalide", e);
-                    }
-                }
-            }
-
-            requestAnimationFrame(() => this.scan());
-        },
-        async verifierEmploye(empId) {
-            try {
-                const response = await axios.get(`/api/employe/${empId}`);
-                this.employeeInfo = response.data;
-                await this.verifierDernierPointage(empId);
-            } catch (error) {
-                console.error("Erreur lors de la vérification de l'employé", error);
-                this.error = "Employé non trouvé";
-            }
-        },
-        async verifierDernierPointage(empId) {
-            try {
-                const response = await axios.get(`/api/presence/dernier/${empId}`);
-                this.lastStatus = response.data;
-            } catch (error) {
-                console.error("Erreur lors de la vérification du dernier pointage", error);
-            }
-        },
-        async fairePresence() {
-            if (!this.employeeInfo) return;
-
-            try {
-                const response = await axios.post('/api/presence', {
-                    emp_im: this.employeeInfo.emp_im
-                });
-                
-                this.lastStatus = response.data;
-                // Afficher une notification de succès
-                alert(`Présence enregistrée: ${response.data.status_pres}`);
-            } catch (error) {
-                console.error("Erreur lors de l'enregistrement de la présence", error);
-                alert("Erreur lors de l'enregistrement de la présence");
-            }
-        },
-        formatTime(date) {
-            return new Date(date).toLocaleTimeString();
-        },
-        getStatusClass() {
-            if (!this.lastStatus) return '';
+                if (response.data.status) {
+                    const userData = response.data.data[0]; // Récupérer le premier élément du tableau data
             
-            const status = this.lastStatus.status_pres;
-            return {
-                'bg-green-800': status === 'présent',
-                'bg-yellow-800': status === 'retard',
-                'bg-red-800': status === 'absent'
-            };
+                    // Stocker les informations de l'utilisateur dans le store
+                    this.$store.commit('setUser', userData);
+                    // Stockez l'ID dans le localStorage
+                    localStorage.setItem('userId', userData.util_id);
+
+                    // Redirigez vers le tableau de bord
+                    this.$router.push('/');
+                } else {
+                    this.showError = true;
+                    this.errorMessage = response.data.message;
+                }
+            } catch (error) {
+                console.error(error);
+                this.showError = true;
+                this.errorMessage = "Erreur lors de la connexion";
+            }
         }
     }
-};
+}
 </script>

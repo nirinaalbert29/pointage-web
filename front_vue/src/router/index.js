@@ -3,7 +3,7 @@ import home from '../views/accueilView.vue'
 import orgChart from '../views/orgchartView.vue'
 import employee from '../views/employeeView.vue'
 import presence from '../views/presenceView.vue'
-import dashBord from '../views/tableauDeBordView.vue'
+import TableauDeBord from '../views/tableauDeBordView.vue'
 import abscence from '../views/abscenceView.vue'  
 import config from '../views/configuration/configurationView.vue'
 import singIn from '../views/auth/signinView.vue'
@@ -12,6 +12,7 @@ import mat from '../views/conge/matePatView.vue'
 import permission from '../views/conge/permissionView.vue'
 import cam from '../views/appareilView.vue'
 import CongeList from '@/views/conge/CongeList.vue'
+import LoginView from '@/views/auth/loginView.vue'
 
 const routes = [        
   {
@@ -40,7 +41,7 @@ const routes = [
   {
     path: '/tableau',
     name: 'tableau',
-    component: dashBord
+    component: TableauDeBord
 
   },          
   {
@@ -64,8 +65,12 @@ const routes = [
     path: '/inscription',
     name: 'inscription',
     component: singIn
-
-  },         
+  }, 
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginView
+  },             
   {
     path: '/annuel',
     name: 'annuel',
