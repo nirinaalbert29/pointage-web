@@ -1,64 +1,68 @@
-let router = require('express').Router();
+const express = require('express');
+const router = express.Router();
+const auth = require('../middleware/auth');
 
-let D = require('../models/data');
+// Controllers
+const EmployeController = require('../controller/employe.controller');
+const UtilisateurController = require('../controller/utilisateur.controller');
+const PresenceController = require('../controller/PresenceController');
+const AbsenceController = require('../controller/absenceController');
+const DashboardController = require('../controller/DashboardController');
+const Conge = require('../controller/conge.controller');
 
-
-//Pour la gestion d'authentification 
-let auth = require('./../middleware/auth');
+// Middleware d'authentification pour toutes les routes
 router.use(auth);
 
-//les requires utils
-
-
-//Message de Vérification
+// Route de vérification API
 router.get('/', (req, res) => {
-    res.send({ message: "API 1.0 Fonctionnel" })
+    res.send({ message: "API 1.0 Fonctionnel" });
 });
 
-//Gestion des utilisateur
-router.post('/users', require('../controller/utilisateur.controller').register);
-router.get('/users', require('../controller/utilisateur.controller').getList);
-router.post('/dec_user', require('../controller/utilisateur.controller').setAccess);
-router.post('/log_user', require('../controller/utilisateur.controller').setLogin);
+// Routes Utilisateurs
+router.post('/users', UtilisateurController.register);
+router.get('/users', UtilisateurController.getList);
+router.post('/dec_user', UtilisateurController.setAccess);
+router.post('/log_user', UtilisateurController.setLogin);
 
+// Routes Employés
+router.post('/emp', EmployeController.register);
+router.put('/emp/:emp_im', EmployeController.update);
+router.delete('/emp/:emp_im', EmployeController.delete);
+router.get('/emp', EmployeController.getList);
+router.get('/emp_', EmployeController.getListDisp);
+router.post('/emps', EmployeController.findList);
+router.get('/user/:emp_im', EmployeController.getUser);
+// router.get('/api/employees', EmployeController.getAll);
+// router.get('/api/dashboard/employee/:emp_im/stats', EmployeController.getDetailedStats);
 
-//Gestion des utilisateur
-router.post('/emp', require('../controller/employe.controller').register);
-router.post('/up_emp', require('../controller/employe.controller').update);
-router.delete('/emp/:emp_im', require('../controller/employe.controller').delete);
-router.get('/emp', require('../controller/employe.controller').getList);
-router.get('/emp_', require('../controller/employe.controller').getListDisp);
-router.get('/user/:id', require('../controller/employe.controller').getDetailsUser);
-router.put('/user', require('../controller/employe.controller').update);
-router.post('/emps', require('../controller/employe.controller').findList);
+// Routes Présences
+// router.post('/presence', PresenceController.register);
+// Routes Présences
+router.post('/presence', PresenceController.register);
+router.delete('/presence/:id_pres', PresenceController.delete);
+router.get('/presence', PresenceController.getList);
+router.get('/presence_days', PresenceController.getDays);
+router.post('/presencee', PresenceController.findList);
+router.get('/presence/dernier/:emp_im', PresenceController.getDernier);
 
+// Routes Absences
+router.get('/employe/:im_emp', AbsenceController.checkEmploye);
+router.get('/absenceList', AbsenceController.find_all_absence);
+router.get('/absence/total/:im_emp', AbsenceController.getTotalAbsences);
+router.post('/absence', AbsenceController.register);
+router.put('/absence/:id_abs', AbsenceController.update);
+router.delete('/absence/:id_abs', AbsenceController.delete);
 
-//Gestion des Presence
-router.post('/presence', require('../controller/presence.controller').register);
-router.delete('/emp/:id_pres', require('../controller/presence.controller').delete);
-router.get('/presence', require('../controller/presence.controller').getList);
-router.get('/presence_days', require('../controller/presence.controller').getDays);
-router.put('/presence', require('../controller/presence.controller').update);
+// Routes Dashboard
+router.get('/api/dashboard/stats', DashboardController.getStats);
+router.get('/api/dashboard/presence/history', DashboardController.getPresenceHistory);
 
-router.post('/presencee', require('../controller/presence.controller').findList);
+// Routes pour les congés
+router.get('/congeList', Conge.find_all_conge);
+router.get('/employe/:id', Conge.checkEmploye);
+router.get('/conge/total/:id', Conge.getTotalConges);
+router.post('/conge', Conge.register);
+router.put('/conge/:id', Conge.update);
+router.delete('/conge/:id', Conge.delete);
 
-
-//Gestion des conge
-router.post('/conge', require('../controller/conge.controller').register);
-router.delete('/conge/:id_pres', require('../controller/conge.controller').delete);
-router.put('/conge', require('../controller/conge.controller').update);
-
-router.post('/congee', require('../controller/conge.controller').findList);
-router.get('/congeList', require('../controller/conge.controller').find_all_conge);
-router.post('/congeUp', require('../controller/conge.controller').update);
-
-//Gestion des abscence
-router.post('/abs', require('../controller/abscence.controller').findList);
-
-//Gestion des dashboard
-router.post('/dashboard', require('../controller/dashboard.controller').getList);
-
-
-
-//------
-module.exports = router
+module.exports = router;

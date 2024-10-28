@@ -81,23 +81,32 @@ class Utilisateur{
         }
     }
 
-    static async setLogin(req,res){
-         
+    static async setLogin(req, res) {
         try {
-            let email = req.body.util_email 
-            let pass =  req.body.util_pass
-
-            let _f = await D.exec_params(`select * from utilisateur where util_email = ? and util_pass = ?`,[email,pass])
-             
-            if(_f.length > 0){
-                await D.exec_params(`update utilisateur set util_status='1' where util_email = ? and util_pass = ?`,[email,pass])
-                return res.send({status:true,data:_f,message:'connection fait'})
-            }else{
-                return res.send({status:false,message:"L'utilisateur n'existe pas"})
+            let email = req.body.util_email
+            let pass = req.body.util_pass
+            
+            console.log('Tentative de connexion pour:', email);
+            
+            let _f = await D.exec_params(
+                `select * from utilisateur where util_email = ? and util_pass = ?`,
+                [email, pass]
+            )
+            
+            console.log('Résultat de la requête:', _f);
+            
+            if (_f.length > 0) {
+                await D.exec_params(
+                    `update utilisateur set util_status='1' where util_email = ? and util_pass = ?`,
+                    [email, pass]
+                )
+                return res.send({status: true, data: _f, message: 'Connexion réussie'})
+            } else {
+                return res.send({status: false, message: "L'utilisateur n'existe pas"})
             }
         } catch (e) {
-            console.error(e)
-            return res.send({status:false,message:"Erreur dans la base de donnée"})
+            console.error('Erreur dans setLogin:', e)
+            return res.send({status: false, message: "Erreur dans la base de données"})
         }
     }
     

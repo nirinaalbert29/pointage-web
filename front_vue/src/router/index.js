@@ -11,6 +11,7 @@ import annuel from '../views/conge/annuelleView.vue'
 import mat from '../views/conge/matePatView.vue'
 import permission from '../views/conge/permissionView.vue'
 import cam from '../views/appareilView.vue'
+import CongeList from '@/views/conge/CongeList.vue'
 
 const routes = [        
   {
@@ -35,7 +36,6 @@ const routes = [
     path: '/employe',
     name: 'employee',
     component: employee
-
   },          
   {
     path: '/tableau',
@@ -59,7 +59,6 @@ const routes = [
     path: '/config',
     name: 'config',
     component: config
-
   },             
   {
     path: '/inscription',
@@ -84,7 +83,16 @@ const routes = [
     name: 'permission',
     component: permission
 
-  },    
+  },   
+  {
+    path: '/conges',
+    name: 'Conges',
+    component: CongeList,
+    meta: {
+      title: 'Gestion des congés',
+      requiresAuth: true // Si vous avez une authentification
+    }
+  } 
 ]
 
 const router = createRouter({

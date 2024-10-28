@@ -1,276 +1,266 @@
-let utils = require('../utils/utils')
-let D = require('../models/data')
+// conge.controller.js
+let utils = require('../utils/utils');
+let D = require('../models/data');
 
 class Conge {
+    static async checkEmploye(req, res) {
+        try {
+            const { im_emp } = req.params;
+            const employe = await D.exec_params('SELECT * FROM employe WHERE emp_im = ?', [im_emp]);
+            
+            return res.send({
+                status: true,
+                employe: employe[0] || null
+            });
+        } catch (e) {
+            console.error(e);
+            return res.send({
+                status: false,
+                message: "Erreur lors de la vérification de l'employé"
+            });
+        }
+    }
+
     static async register(req, res) {
-
-        let _d = req.body;
-
-        let conge_data = {
-            id_conge: { front_name: 'id_conge', fac: true },
-            im_emp: { front_name: "im_emp", fac: false },
-            type_conge: { front_name: "type_conge", fac: false, },
-            motif_conge: { front_name: "motif_conge", fac: false, },
-            nbr_jour: { front_name: "nbr_jour", fac: false, },
-            etat_conge: { front_name: "etat_conge", fac: false, },
-            conge_date_enreg: { front_name: 'conge_date_enreg', fac: true, format: (a) => new Date() },
-        };
-
-        //Vérification du conge
-        const _pd_keys = Object.keys(conge_data)
-        let _tmp = {}
-        let _list_error = []
         try {
-            _pd_keys.forEach((v, i) => {
-                _tmp = conge_data[v]
-                if (!_tmp.fac && !_d[_tmp.front_name]) {
-                    _list_error.push({ code: _tmp.front_name })
-                }
-            })
+            const _d = req.body;
 
-
-
-            if (_list_error.length > 0) {
-                return res.send({ status: false, message: "Certains champs sont vide ", data: _list_error })
+            // Vérifier si l'employé existe
+            const employe = await D.exec_params('SELECT * FROM employe WHERE emp_im = ?', [_d.im_emp]);
+            if (!employe.length) {
+                return res.send({
+                    status: false,
+                    message: "L'employé n'existe pas"
+                });
             }
 
-            //Si la vérification c'est bien passé, 
-            // on passe à l'insertion du conge
-            let _data = {}
-            _pd_keys.forEach((v, i) => {
-                _tmp = conge_data[v]
+            // Vérifier le total des congés
+            const currentYear = new Date().getFullYear();
+            const totalConges = await D.exec_params(`
+                SELECT COALESCE(SUM(nbr_jour), 0) as total
+                FROM conge 
+                WHERE im_emp = ? 
+                AND YEAR(conge_date_enreg) = ?
+                AND etat_conge = 1
+            `, [_d.im_emp, currentYear]);
 
-                if (_tmp.format != undefined) {
-                    _d[_tmp.front_name] = _tmp.format(_d[_tmp.front_name])
-                }
-
-                _data[v] = _d[_tmp.front_name]
-            })
-
-            //Hashage de mot de passe
-            // _data['util_pass'] = await utils.hash(_data['util_pass'])
-
-            //l'objet conge est rempli maintenant
-            // on l'insert dans la base de donnée
-
-            await D.set('conge', _data)
-                //Ici tous les fonctions sur l'enregistrement d'un conge
-            return res.send({ status: true, message: "user bien enregistrer." })
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-
-
-    }
-
-    static async delete(req, res) {
-        try {
-            await D.del('conge', req.params)
-                //Ici tous les fonctions sur l'enregistrement d'un conge
-            return res.send({ status: true, message: "user supprimé." })
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-
-    }
-
-    //Récupération des détails des conges
-    static async getDetailsUser(req, res) {
-        try {
-
-            let { id } = req.params
-
-            //Récupération d'un simple conge
-            let user = (await D.exec_params('select * from conge where id_conge = ?', id))[0]
-
-            //Récupération accès modules
-            let user_access = await D.exec_params(`select * from module
-            left join util_access on module_id = ua_module_id 
-            left join conge on id_conge = ?`, id)
-
-
-
-            //à venir : récupération des historiques de l'conge
-            let module_list = await D.exec('select * from module')
-
-
-            // console.log(user);
-
-            return res.send({ status: true, user, user_access, module_list })
-
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-    }
-
-    //Récupération des détails des conges
-    static async setLogout(req, res) {
-        try {
-
-            let { id } = req.params
-
-            //Récupération d'un simple conge
-            let user = (await D.exec_params('select * from conge where id_conge = ?', id))[0]
-
-            //Récupération accès modules
-            let user_access = await D.exec_params(`select * from module
-            left join util_access on module_id = ua_module_id 
-            left join conge on id_conge = ?`, id)
-
-
-
-            //à venir : récupération des historiques de l'conge
-            let module_list = await D.exec('select * from module')
-
-
-            // console.log(user);
-
-            return res.send({ status: true, user, user_access, module_list })
-
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-    }
-
-    static async setAccess(req, res) {
-
-        try {
-            let email = req.body.util_email
-            let pass = req.body.util_pass
-
-            let _f = await D.exec_params(`select * from conge where util_email = ? and util_pass = ?`, [email, pass])
-
-            if (_f.length > 0) {
-                await D.exec_params(`update conge set util_status='0' where util_email = ? and util_pass = ?`, [email, pass])
+            const newTotal = totalConges[0].total + parseInt(_d.nbr_jour);
+            if (newTotal > 30) {
+                return res.send({
+                    status: false,
+                    message: "Le nombre total de jours de congés ne peut pas dépasser 30 jours par an"
+                });
             }
-            return res.send({ status: true, message: 'Deconnection fait' })
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-    }
 
+            const congeData = {
+                im_emp: _d.im_emp,
+                type_conge: _d.type_conge,
+                motif_conge: _d.motif_conge,
+                nbr_jour: _d.nbr_jour,
+                etat_conge: _d.etat_conge,
+                conge_date_enreg: new Date()
+            };
 
-    static async setLogin(req, res) {
+            await D.set('conge', congeData);
+            return res.send({
+                status: true,
+                message: "Congé enregistré avec succès"
+            });
+        // Suite de conge.controller.js
 
-        try {
-            let email = req.body.util_email
-            let pass = req.body.util_pass
-
-            let _f = await D.exec_params(`select * from conge where util_email = ? and util_pass = ?`, [email, pass])
-
-            if (_f.length > 0) {
-                await D.exec_params(`update conge set util_status='1' where util_email = ? and util_pass = ?`, [email, pass])
-                return res.send({ status: true, message: 'connection fait' })
-            } else {
-                return res.send({ status: false, message: "L'conge n'existe pas" })
-            }
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-    }
-
-
-    static async getList(req, res) {
-        let type = req.body.type
-        let filters = req.query
-        let _obj_pat = {
-            id_conge: 'id_conge',
-            util_label: 'emp_nom_prenom',
-        }
-        let default_sort_by = 'id_conge'
-
-        filters.page = (!filters.page) ? 1 : parseInt(filters.page)
-        filters.limit = (!filters.limit) ? 100 : parseInt(filters.limit)
-        filters.sort_by = (!filters.sort_by) ? _obj_pat[default_sort_by] : _obj_pat[filters.sort_by]
-
-        try {
-            //A reserver recherche par nom_prenom
-            let reponse = await D.exec_params(`select * from conge  where type_conge= ?  order by ${filters.sort_by} limit ? offset ? `, [
-                    type,
-                    filters.limit,
-                    (filters.page - 1) * filters.limit
-                ])
-                //Liste total des conge
-            let nb_total_conge = (await D.exec('select count(*) as nb from conge'))[0].nb
-
-            return res.send({ status: true, reponse, nb_total_conge })
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-    }
-
-    static async findList(req, res) {
-
-        // let find_val =req.body.find
-        let filters = req.query
-        let _obj_pat = {
-            id_conge: 'id_conge',
-            emp_nom_prenom: 'emp_nom_prenom',
-        }
-        let default_sort_by = 'id_conge'
-        filters.page = (!filters.page) ? 1 : parseInt(filters.page)
-        filters.limit = (!filters.limit) ? 100 : parseInt(filters.limit)
-        filters.sort_by = (!filters.sort_by) ? _obj_pat[default_sort_by] : _obj_pat[filters.sort_by]
-        try {
-            let reponse = await D.exec_params(`select conge.*, employe.* 
-             from  
-             conge left join employe on employe.emp_im=conge.im_emp where conge.etat_conge=1 and
-             employe.emp_nom_prenom like ? and conge.type_conge=? order by ${'conge.'+filters.sort_by} limit ? offset ? `, [
-                    '%' + req.body.find + '%',
-                    req.body.type_,
-                    filters.limit,
-                    (filters.page - 1) * filters.limit
-                ])
-                //Liste total des conge
-            let nb_total_conge = (await D.exec('select count(*) as nb from conge'))[0].nb
-
-            return res.send({ status: true, reponse, nb_total_conge })
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-    }
-
-    static async find_all_conge(req, res) {
-
-        // let find_val =req.body.find
-        let filters = req.query
-        let _obj_pat = {
-            id_conge: 'id_conge',
-            emp_nom_prenom: 'emp_nom_prenom',
-        }
-        let default_sort_by = 'id_conge'
-        filters.page = (!filters.page) ? 1 : parseInt(filters.page)
-        filters.limit = (!filters.limit) ? 100 : parseInt(filters.limit)
-        filters.sort_by = (!filters.sort_by) ? _obj_pat[default_sort_by] : _obj_pat[filters.sort_by]
-        try {
-            let reponse = await D.exec_params(`select * from conge where etat_conge=1;`)
-                //Liste total des conge
-            let nb_total_conge = (await D.exec('select count(*) as nb from conge'))[0].nb
-
-            return res.send({ status: true, reponse, nb_total_conge })
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
-    }
-
-    static async update(req, res) {
-        try {
-            await D.updateWhere('conge', { etat_conge: req.body.etat_conge }, { id_conge: req.body.id_conge })
-            return res.send({ status: true, message: "Mise à jour, fait" })
-        } catch (e) {
-            console.error(e)
-            return res.send({ status: false, message: "Erreur dans la base de donnée" })
-        }
+    } catch (e) {
+        console.error(e);
+        return res.send({
+            status: false,
+            message: "Erreur lors de l'enregistrement du congé"
+        });
     }
 }
 
-module.exports = Conge
+static async update(req, res) {
+    try {
+        const { id_conge } = req.params;
+        const updateData = req.body;
+
+        // 1. Vérifier si le congé existe et récupérer ses données actuelles
+        const existingConge = await D.exec_params('SELECT * FROM conge WHERE id_conge = ?', [id_conge]);
+        if (!existingConge.length) {
+            return res.send({
+                status: false,
+                message: "Le congé n'existe pas"
+            });
+        }
+
+        // 2. Vérifier si l'employé existe (si l'im_emp est modifié)
+        if (updateData.im_emp && updateData.im_emp !== existingConge[0].im_emp) {
+            const employe = await D.exec_params('SELECT * FROM employe WHERE emp_im = ?', [updateData.im_emp]);
+            if (!employe.length) {
+                return res.send({
+                    status: false,
+                    message: "L'employé n'existe pas"
+                });
+            }
+        }
+
+        // 3. Préparer les données à mettre à jour en utilisant les valeurs existantes si non fournies
+        const finalUpdateData = {
+            im_emp: updateData.im_emp || existingConge[0].im_emp,
+            type_conge: updateData.type_conge || existingConge[0].type_conge,
+            motif_conge: updateData.motif_conge || existingConge[0].motif_conge,
+            nbr_jour: updateData.nbr_jour || existingConge[0].nbr_jour,
+            etat_conge: updateData.etat_conge !== undefined ? updateData.etat_conge : existingConge[0].etat_conge
+        };
+
+        // 4. Vérifier le total des jours de congés si le nombre de jours ou l'employé change
+        if (updateData.nbr_jour || updateData.im_emp) {
+            const currentYear = new Date().getFullYear();
+            const totalConges = await D.exec_params(`
+                SELECT COALESCE(SUM(nbr_jour), 0) as total
+                FROM conge 
+                WHERE im_emp = ? 
+                AND id_conge != ?
+                AND YEAR(conge_date_enreg) = ?
+                AND etat_conge = 1
+            `, [finalUpdateData.im_emp, id_conge, currentYear]);
+
+            const newTotal = totalConges[0].total + parseInt(finalUpdateData.nbr_jour);
+            if (newTotal > 30) {
+                return res.send({
+                    status: false,
+                    message: "Le nombre total de jours de congés ne peut pas dépasser 30 jours par an"
+                });
+            }
+        }
+
+        // 5. Mettre à jour le congé avec les nouvelles valeurs
+        const result = await D.exec_params(`
+            UPDATE conge 
+            SET 
+                im_emp = ?,
+                type_conge = ?,
+                motif_conge = ?,
+                nbr_jour = ?,
+                etat_conge = ?,
+                date_modification = NOW()
+            WHERE id_conge = ?
+        `, [
+            finalUpdateData.im_emp,
+            finalUpdateData.type_conge,
+            finalUpdateData.motif_conge,
+            finalUpdateData.nbr_jour,
+            finalUpdateData.etat_conge,
+            id_conge
+        ]);
+
+        // 6. Vérifier si la mise à jour a été effectuée
+        if (result.affectedRows === 0) {
+            return res.send({
+                status: false,
+                message: "Aucune modification n'a été effectuée"
+            });
+        }
+
+        return res.send({
+            status: true,
+            message: "Congé mis à jour avec succès",
+            data: finalUpdateData
+        });
+    } catch (e) {
+        console.error(e);
+        return res.send({
+            status: false,
+            message: "Erreur lors de la mise à jour du congé"
+        });
+    }
+}
+
+static async delete(req, res) {
+    try {
+        const { id_conge } = req.params;
+
+        // Vérifier si le congé existe
+        const existingConge = await D.exec_params('SELECT * FROM conge WHERE id_conge = ?', [id_conge]);
+        if (!existingConge.length) {
+            return res.send({
+                status: false,
+                message: "Le congé n'existe pas"
+            });
+        }
+
+        // Supprimer le congé
+        await D.exec_params('DELETE FROM conge WHERE id_conge = ?', [id_conge]);
+
+        return res.send({
+            status: true,
+            message: "Congé supprimé avec succès"
+        });
+    } catch (e) {
+        console.error(e);
+        return res.send({
+            status: false,
+            message: "Erreur lors de la suppression du congé"
+        });
+    }
+}
+
+static async find_all_conge(req, res) {
+    try {
+        const conges = await D.exec_params(`
+            SELECT c.*, e.emp_nom_prenom 
+            FROM conge c
+            LEFT JOIN employe e ON e.emp_im = c.im_emp
+            WHERE c.etat_conge = 1
+            ORDER BY c.conge_date_enreg DESC
+        `);
+
+        return res.send({
+            status: true,
+            reponse: conges
+        });
+    } catch (e) {
+        console.error(e);
+        return res.send({
+            status: false,
+            message: "Erreur lors de la récupération des congés"
+        });
+    }
+}
+
+static async getTotalConges(req, res) {
+    try {
+        const { im_emp } = req.params;
+        const currentYear = new Date().getFullYear();
+        
+        // Vérifier si l'employé existe
+        const employe = await D.exec_params('SELECT * FROM employe WHERE emp_im = ?', [im_emp]);
+        if (!employe.length) {
+            return res.send({
+                status: false,
+                message: "L'employé n'existe pas"
+            });
+        }
+
+        // Calculer le total des jours de congés pour l'année en cours
+        const result = await D.exec_params(`
+            SELECT COALESCE(SUM(nbr_jour), 0) as total
+            FROM conge 
+            WHERE im_emp = ? 
+            AND YEAR(conge_date_enreg) = ?
+            AND etat_conge = 1
+        `, [im_emp, currentYear]);
+        
+        return res.send({ 
+            status: true, 
+            total: result[0].total 
+        });
+    } catch (e) {
+        console.error(e);
+        return res.send({ 
+            status: false, 
+            message: "Erreur lors du calcul du total des congés" 
+        });
+    }
+}
+}
+
+module.exports = Conge;

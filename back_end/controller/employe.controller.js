@@ -59,14 +59,16 @@ class Employe {
             console.error(e);
             return res.send({
                 status: false,
-                message: "Erreur dans la base de donnée",
+                message: "Immatricule déjà existant,veuillez changer puis réssayez!",
             });
         }
     }
     static async update(req, res) {
         let _d = req.body;
+        
+        // Structure des données employé
         let employe_data = {
-            emp_im: { front_name: "emp_im", fac: true },
+            emp_im: { front_name: "emp_im", fac: false }, // Changé à false car c'est l'identifiant
             emp_nom_prenom: { front_name: "emp_nom_prenom", fac: false },
             date_naiss: { front_name: "date_naiss", fac: false },
             sexe: { front_name: "sexe", fac: false },
@@ -79,46 +81,84 @@ class Employe {
                 format: (a) => new Date(),
             },
         };
-        //Vérification du employe
-        const _pd_keys = Object.keys(employe_data);
-        let _tmp = {};
-        let _list_error = [];
+
         try {
-            _pd_keys.forEach((v, i) => {
-                _tmp = employe_data[v];
-                if (!_tmp.fac && !_d[_tmp.front_name]) {
-                    _list_error.push({ code: _tmp.front_name });
+            // Vérifier si l'employé existe avant la mise à jour
+            const existingEmployee = await D.exec_params(
+                'SELECT * FROM employe WHERE emp_im = ?',
+                [_d.emp_im]
+            );
+
+            if (!existingEmployee || existingEmployee.length === 0) {
+                return res.status(404).send({
+                    status: false,
+                    message: "Employé non trouvé"
+                });
+            }
+
+            // Vérification des champs obligatoires
+            const _pd_keys = Object.keys(employe_data);
+            let _list_error = [];
+            
+            _pd_keys.forEach(key => {
+                const field = employe_data[key];
+                if (!field.fac && (!_d[field.front_name] || _d[field.front_name].trim() === '')) {
+                    _list_error.push({ 
+                        code: field.front_name,
+                        message: `Le champ ${field.front_name} est obligatoire`
+                    });
                 }
             });
 
             if (_list_error.length > 0) {
-                return res.send({
+                return res.status(400).send({
                     status: false,
-                    message: "Certains champs sont vide ",
-                    data: _list_error,
+                    message: "Certains champs obligatoires sont vides",
+                    errors: _list_error,
                 });
             }
 
+            // Préparation des données à mettre à jour
             let _data = {};
-            _pd_keys.forEach((v, i) => {
-                _tmp = employe_data[v];
-
-                if (_tmp.format != undefined) {
-                    _d[_tmp.front_name] = _tmp.format(_d[_tmp.front_name]);
+            _pd_keys.forEach(key => {
+                const field = employe_data[key];
+                if (_d[field.front_name] !== undefined) {
+                    if (field.format) {
+                        _data[key] = field.format(_d[field.front_name]);
+                    } else {
+                        _data[key] = _d[field.front_name];
+                    }
                 }
-
-                _data[v] = _d[_tmp.front_name];
             });
-            console.log(_data);
-            _data.date_naiss = new Date(_data.date_naiss)
+
+            // Conversion de la date de naissance
+            if (_data.date_naiss) {
+                _data.date_naiss = new Date(_data.date_naiss);
+                
+                // Vérification de la validité de la date
+                if (isNaN(_data.date_naiss.getTime())) {
+                    return res.status(400).send({
+                        status: false,
+                        message: "Format de date de naissance invalide"
+                    });
+                }
+            }
+
+            // Mise à jour dans la base de données
             await D.updateWhere("employe", _data, { emp_im: _data.emp_im });
-            //Ici tous les fonctions sur l'enregistrement d'un employe
-            return res.send({ status: true, message: "Mise à jour, fait" });
-        } catch (e) {
-            console.error(e);
-            return res.send({
+
+            return res.send({ 
+                status: true, 
+                message: "Mise à jour effectuée avec succès",
+                data: _data
+            });
+
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour:', error);
+            return res.status(500).send({
                 status: false,
-                message: "Erreur dans la base de donnée",
+                message: "Erreur lors de la mise à jour dans la base de données",
+                error: error.message
             });
         }
     }
@@ -280,28 +320,115 @@ class Employe {
         }
     }
 
-    // static async update(req, res) {
-    //     let { user, mng_pass } = req.body;
-    //     delete user.util_date_enreg;
+    static async getUser(req, res) {
+        try {
+            const { emp_im } = req.params;
+            
+            const user = await D.exec_params(
+                'SELECT * FROM employe WHERE emp_im = ?',
+                [emp_im]
+            );
 
-    //     try {
-    //         if (mng_pass.change) {
-    //             user.util_mdp = await utils.hash(mng_pass.pass);
-    //         } else {
-    //             delete user.util_mdp;
-    //         }
+            if (!user || user.length === 0) {
+                return res.status(404).json({ 
+                    status: false,
+                    message: "Employé non trouvé"
+                });
+            }
 
-    //         await D.updateWhere("employe", user, { util_id: user.util_id });
-    //         //Ici tous les fonctions sur l'enregistrement d'un employe
-    //         return res.send({ status: true, message: "Mise à jour, fait" });
-    //     } catch (e) {
-    //         console.error(e);
-    //         return res.send({
-    //             status: false,
-    //             message: "Erreur dans la base de donnée",
-    //         });
-    //     }
-    // }
+            return res.json({
+                status: true,
+                user: user[0]
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({
+                status: false,
+                message: "Erreur lors de la récupération des informations de l'employé"
+            });
+        }
+    }
+
+    async getAll(req, res) {
+        try {
+            const employees = await db.exec_params(`
+                SELECT 
+                    emp_im,
+                    emp_nom_prenom,
+                    date_naiss,
+                    sexe,
+                    emp_fonction,
+                    emp_tel,
+                    emp_adresse,
+                    emp_date_enreg
+                FROM employe
+                ORDER BY emp_nom_prenom ASC
+            `);
+
+            res.json({
+                status: true,
+                data: employees
+            });
+        } catch (error) {
+            console.error('Erreur lors de la récupération des employés:', error);
+            res.status(500).json({
+                status: false,
+                message: "Erreur lors de la récupération des employés"
+            });
+        }
+    }
+
+    async getDetailedStats(req, res) {
+        try {
+            const { emp_im } = req.params;
+            const { year, month } = req.query;
+
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0);
+
+            const [presences, absences, conges] = await Promise.all([
+                db.exec_params(`
+                    SELECT 
+                        COUNT(CASE WHEN status_pres = 'present' THEN 1 END) as total_present,
+                        COUNT(CASE WHEN status_pres = 'retard' THEN 1 END) as total_retard
+                    FROM presence 
+                    WHERE im_emp = ? 
+                    AND DATE(pres_date_enreg) BETWEEN DATE(?) AND DATE(?)
+                `, [emp_im, startDate, endDate]),
+
+                db.exec_params(`
+                    SELECT COUNT(*) as total_absences, SUM(nb_jours) as total_jours_absence
+                    FROM absence 
+                    WHERE im_emp = ? 
+                    AND DATE(date_debut) <= DATE(?) 
+                    AND DATE(date_fin) >= DATE(?)
+                `, [emp_im, endDate, startDate]),
+
+                db.exec_params(`
+                    SELECT COUNT(*) as total_conges, SUM(nbr_jour) as total_jours_conge
+                    FROM conge 
+                    WHERE im_emp = ? 
+                    AND etat_conge = 'accepté'
+                    AND DATE(conge_date_enreg) BETWEEN DATE(?) AND DATE(?)
+                `, [emp_im, startDate, endDate])
+            ]);
+
+            res.json({
+                status: true,
+                data: {
+                    presences: presences[0],
+                    absences: absences[0],
+                    conges: conges[0]
+                }
+            });
+        } catch (error) {
+            console.error('Erreur lors de la récupération des statistiques détaillées:', error);
+            res.status(500).json({
+                status: false,
+                message: "Erreur lors de la récupération des statistiques détaillées"
+            });
+        }
+    }
 }
 
 module.exports = Employe;
