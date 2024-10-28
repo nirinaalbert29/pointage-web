@@ -49,6 +49,8 @@ router.get('/presence', PresenceController.getList);
 router.get('/presence_days', PresenceController.getDays);
 router.post('/presencee', PresenceController.findList);
 router.get('/presence/dernier/:emp_im', PresenceController.getDernier);
+// Dans votre fichier de routes
+router.get('/employee/verify/:emp_im', PresenceController.verifyEmployee);
 
 // Routes Absences
 router.get('/employe/:im_emp', AbsenceController.checkEmploye);

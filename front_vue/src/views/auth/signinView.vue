@@ -68,7 +68,7 @@
     
                     <!-- Bouton Retour Login (visible après succès) -->
                     <div class="rounded-lg px-2 border border-gray-400">
-                        <router-link to="/" class="flex text-gray-400 text-xl w-full rounded-lg items-center justify-center py-2">
+                        <router-link to="/login" class="flex text-gray-400 text-xl w-full rounded-lg items-center justify-center py-2">
                             <svg class="w-5 mr-2" viewBox="0 0 24 24">
                                 <path class="fill-current text-gray-400" d="M9 5v4h12V5M9 19h12v-4H9m0-1h12v-4H9M4 9h4V5H4m0 14h4v-4H4m0-1h4v-4H4v4z" />
                             </svg>

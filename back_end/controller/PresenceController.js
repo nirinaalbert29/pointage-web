@@ -342,6 +342,50 @@ class PresenceController {
                 return res.send({ status: false, message: "Erreur dans la base de donnée" });
             }
         }
+
+        static async verifyEmployee(req, res) {
+            try {
+                const { emp_im } = req.params;
+                
+                // Vérifier si l'employé existe
+                const employe = await db.exec_params(
+                    `SELECT e.*, 
+                    (SELECT COUNT(*) FROM presence p 
+                     WHERE p.im_emp = e.emp_im 
+                     AND DATE(p.pres_date_enreg) = CURRENT_DATE) as today_presence_count,
+                    (SELECT status_pres FROM presence p 
+                     WHERE p.im_emp = e.emp_im 
+                     ORDER BY p.pres_date_enreg DESC LIMIT 1) as last_status
+                    FROM employe e 
+                    WHERE e.emp_im = ?`,
+                    [emp_im]
+                );
+        
+                if (!employe || employe.length === 0) {
+                    return res.status(404).json({
+                        status: false,
+                        message: "Employé non trouvé"
+                    });
+                }
+        
+                return res.json({
+                    status: true,
+                    message: "Employé trouvé",
+                    data: {
+                        employee: employe[0],
+                        canRegisterPresence: employe[0].today_presence_count < 2
+                    }
+                });
+        
+            } catch (error) {
+                console.error(error);
+                return res.status(500).json({
+                    status: false,
+                    message: "Erreur lors de la vérification de l'employé"
+                });
+            }
+        }
+        
     
 }
 

@@ -161,149 +161,120 @@ export default {
     },
 
     async handleSuccessfulScan(codeData) {
-  let loadingAlert;
-  try {
-    let empId = null;
-    console.log("Données du QR code brutes:", codeData);
-
-    // Si codeData est déjà une chaîne numérique valide
-    if (/^\d+$/.test(codeData.trim())) {
-      empId = codeData.trim();
-    } else {
-      // Sinon, essayer de parser comme JSON
-      try {
-        const data = JSON.parse(codeData);
-        empId = data.emp_im;
-      } catch (e) {
-        // Si ce n'est pas du JSON valide, chercher un nombre dans la chaîne
-        const matches = codeData.match(/\d+/);
-        if (matches) {
-          empId = matches[0];
-        }
-      }
-    }
-
-    // Vérifier si empId est valide
-    if (!empId) {
-      throw new Error('QR code invalide : ID employé non trouvé');
-    }
-
-    console.log("ID employé validé:", empId);
-
-    // Loading pendant la récupération des données
-    loadingAlert = Swal.fire({
-      title: 'Chargement...',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
+    let loadingAlert;
     try {
-      // Vérifier l'employé avec timeout
-      const response = await Promise.race([
-        axios.get(`${this.baseUrl}/api/user/${empId}`),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Délai d\'attente dépassé')), 10000)
-        )
-      ]);
+        let empId = null;
+        
+        // Extraction de l'ID employé du QR code
+        if (/^\d+$/.test(codeData.trim())) {
+            empId = codeData.trim();
+        } else {
+            try {
+                const data = JSON.parse(codeData);
+                empId = data.emp_im;
+            } catch (e) {
+                const matches = codeData.match(/\d+/);
+                if (matches) {
+                    empId = matches[0];
+                }
+            }
+        }
 
-      console.log("Réponse API user:", response.data);
-      
-      if (!response.data || !response.data.user) {
-        throw new Error(`Employé avec ID ${empId} non trouvé dans la base de données`);
-      }
+        if (!empId) {
+            throw new Error('QR code invalide : ID employé non trouvé');
+        }
 
-      const employeeInfo = response.data.user;
-
-      // Fermer l'alerte de chargement
-      if (loadingAlert) {
-        loadingAlert.close();
-      }
-
-      // Récupérer le dernier pointage
-      const presenceResponse = await axios.get(`${this.baseUrl}/api/presence/dernier/${empId}`);
-      console.log("Réponse API présence:", presenceResponse.data);
-      
-      const lastPresence = presenceResponse.data.status ? presenceResponse.data.data : null;
-
-      // Afficher les informations
-      const result = await Swal.fire({
-        title: 'Information Employé',
-        html: `
-          <div class="text-left">
-            <p><strong>ID:</strong> ${employeeInfo.emp_im}</p>
-            <p><strong>Nom:</strong> ${employeeInfo.emp_nom_prenom}</p>
-            <p><strong>Fonction:</strong> ${employeeInfo.emp_fonction}</p>
-            ${lastPresence ? `
-              <p><strong>Dernier pointage:</strong> ${new Date(lastPresence.pres_date_enreg).toLocaleString()}</p>
-              <p><strong>Statut:</strong> ${lastPresence.status_pres}</p>
-            ` : '<p>Aucun pointage précédent</p>'}
-          </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: 'Enregistrer présence',
-        cancelButtonText: 'Fermer',
-        allowOutsideClick: false
-      });
-
-      if (result.isConfirmed) {
-        const presenceResult = await axios.post(`${this.baseUrl}/api/presence`, {
-          emp_im: employeeInfo.emp_im
+        // Afficher le loading
+        loadingAlert = Swal.fire({
+            title: 'Vérification...',
+            text: 'Veuillez patienter',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
+
+        // Vérifier l'employé avec la nouvelle route
+        const response = await axios.get(`${this.baseUrl}/api/employee/verify/${empId}`);
+        
+        if (loadingAlert) {
+            loadingAlert.close();
+        }
+
+        if (!response.data.status) {
+            throw new Error(response.data.message);
+        }
+
+        const employeeData = response.data.data;
+        const canRegister = employeeData.canRegisterPresence;
+
+        // Afficher les informations de l'employé
+        const result = await Swal.fire({
+            title: 'Information Employé',
+            html: `
+                <div class="text-left p-4">
+                    <div class="mb-4 ${canRegister ? 'text-green-600' : 'text-red-600'} text-center font-bold">
+                        ${canRegister ? 'Pointage disponible' : 'Pointage déjà effectué'}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="font-semibold">ID:</div>
+                        <div>${employeeData.employee.emp_im}</div>
+                        
+                        <div class="font-semibold">Nom:</div>
+                        <div>${employeeData.employee.emp_nom_prenom}</div>
+                        
+                        <div class="font-semibold">Fonction:</div>
+                        <div>${employeeData.employee.emp_fonction}</div>
+                        
+                        <div class="font-semibold">Dernier statut:</div>
+                        <div>${employeeData.employee.last_status || 'Aucun'}</div>
+                    </div>
+                </div>
+            `,
+            // showCancelButton: true,
+            confirmButtonText: canRegister ? 'Enregistrer présence' : 'Fermer',
+            confirmButtonColor: canRegister ? '#4CAF50' : '#f44336',
+            cancelButtonText: 'Fermer',
+            showCancelButton: !canRegister,
+            allowOutsideClick: false
+        });
+
+        if (result.isConfirmed && canRegister) {
+            const presenceResult = await axios.post(`${this.baseUrl}/api/presence`, {
+                emp_im: empId
+            });
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Présence enregistrée',
+                text: `Statut: ${presenceResult.data.data.status_pres}`,
+                showConfirmButton: false,
+                timer: 3000
+            });
+        }
+
+    } catch (error) {
+        if (loadingAlert) {
+            loadingAlert.close();
+        }
+
+        let errorMessage = 'Une erreur est survenue';
+        if (error.response) {
+            errorMessage = error.response.data.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
 
         await Swal.fire({
-          icon: 'success',
-          title: 'Présence enregistrée',
-          text: `Statut: ${presenceResult.data.data.status_pres}`,
-          showConfirmButton: false,
-          timer: 3000
+            icon: 'error',
+            title: 'Erreur',
+            text: errorMessage,
+            confirmButtonColor: '#f44336'
         });
-      }
-    } catch (error) {
-      // S'assurer que l'alerte de chargement est fermée
-      if (loadingAlert) {
-        loadingAlert.close();
-      }
-
-      // Déterminer le message d'erreur approprié
-      let errorMessage;
-      if (error.message === 'Délai d\'attente dépassé') {
-        errorMessage = 'Le serveur ne répond pas. Vérifiez votre connexion et le serveur.';
-      } else if (error.response) {
-        errorMessage = `Erreur serveur: ${error.response.data?.message || error.message}`;
-      } else if (error.request) {
-        errorMessage = 'Impossible de communiquer avec le serveur. Vérifiez votre connexion.';
-      } else {
-        errorMessage = error.message;
-      }
-
-      console.error("Erreur complète:", error);
-      
-      await Swal.fire({
-        icon: 'error',
-        title: 'Erreur',
-        text: errorMessage,
-        showConfirmButton: true
-      });
+    } finally {
+        this.lastScannedCode = null;
+        this.startScanning();
     }
-  } catch (error) {
-    // S'assurer que l'alerte de chargement est fermée
-    if (loadingAlert) {
-      loadingAlert.close();
-    }
-
-    console.error("Erreur complète:", error);
-    await Swal.fire({
-      icon: 'error',
-      title: 'Erreur',
-      text: error.message || 'Erreur lors du traitement du QR code',
-      showConfirmButton: true
-    });
-  } finally {
-    this.lastScannedCode = null;
-    this.startScanning();
-  }
 }
   },
 
